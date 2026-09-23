@@ -1,13 +1,28 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -O2
-LDFLAGS = -lzmq -lczmq -lnanomsg -lnng
-SRC = $(wildcard *.c)
+# NNG-only build. zeromq/nanomsg sources and libs are disabled.
+# Fork layout: this Makefile lives in <bench>/bml/, the fork in <bench>/../nng
+NNG_SRC = ../../nng
+NNG_BUILD = ../../nng/build
+CFLAGS = -Wall -Wextra -O2 -pthread -I$(NNG_SRC)/include -I$(NNG_SRC)
+LDFLAGS = -L$(NNG_BUILD) -Wl,-rpath,$(abspath $(NNG_BUILD)) -lnng -pthread -lm
+# NNG-only sources (ops_zeromq.c / ops_nanomsg.c intentionally excluded)
+SRC = pub-sub.c utils.c ops_nng.c
 OBJ = $(SRC:.c=.o)
 EXEC = bml-pub-sub
 
-.PHONY: all clean
+# RTT-lite toggle: the fork's nng_wrapper.h only activates when
+# NNG_PUBSUB_RELIABLE is defined. Default (plain `make`) = normal NNG.
+# RTT-lite build: `make RTT=1` (or `make reliable`).
+ifeq ($(RTT),1)
+CFLAGS += -DNNG_PUBSUB_RELIABLE
+endif
+
+.PHONY: all clean reliable
 
 all: $(EXEC)
+
+reliable: CFLAGS += -DNNG_PUBSUB_RELIABLE
+reliable: $(EXEC)
 
 $(EXEC): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)

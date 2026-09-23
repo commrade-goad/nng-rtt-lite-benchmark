@@ -1,8 +1,7 @@
 #ifndef PUB_SUB_H
 #define PUB_SUB_H
-// todo: are this lib necessary here?
+// NNG-only build: zeromq/nanomsg support removed.
 #include <stdint.h>
-#include <czmq.h>
 
 extern int message_count;
 extern int payload_length;
@@ -46,32 +45,7 @@ void publisher(void *pipe, void *args);
 void subscriber(void *pipe, void *args);
 
 // -------------------------------
-// ZeroMQ operations
-// -------------------------------
-void zmq_threads_init(int num_subs, subscriber_args_t subscribers[]);
-void* zmq_create_pub(const char* endpoint, void* pipe);
-void* zmq_create_sub(const char* endpoint, const char* filter, void* pipe);
-void* zmq_create_poller(void* socket, int is_publisher);
-void zmq_destroy(void* socket);
-int zmq_send_msg(void* socket, const char* message);
-char* zmq_recv_msg(void* socket);                   
-int zmq_poll_socket(void* poller, int is_publisher);
-
-// -------------------------------
-// NanoMsg operations
-// -------------------------------
-
-void nn_threads_init(int num_subs, subscriber_args_t subscribers[]);
-void* nn_create_pub(const char* endpoint, void* pipe);
-void* nn_create_sub(const char* endpoint, const char* filter, void* pipe);
-void* nn_create_poller(void* socket, int is_publisher);
-void nn_destroy(void* socket);
-int nn_send_msg(void* socket, const char* message); 
-char* nn_recv_msg(void* socket);                    
-int nn_poll_socket(void* poller, int is_publisher);
-
-// -------------------------------
-// NNG operations
+// NNG operations (only library enabled)
 // -------------------------------
 void nng_threads_init(int num_subs, subscriber_args_t subscribers[]);
 void* nng_create_pub(const char* endpoint, void* pipe);

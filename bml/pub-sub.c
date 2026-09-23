@@ -61,12 +61,9 @@ static int sub_count = 0;
 static int pub_count = 0;
 
 void display_help(char* program) {
-    printf("Usage: %s <zeromq|nanomsg|nng> [OPTIONS]\n"
+    printf("Usage: %s <nng> [OPTIONS]\n"
            "Examples:\n"
-           "  In-process:\t\t%s zeromq --log --sub --sub --sub_ids sub1 sub2 --pub --count 100 --rate 500 --dp-len 100 --delay 1000 --endpoint inproc://benchmark\n"
-           "  Inter-process:\n"
-           "    Publisher:\t%s zeromq --log --pub --count 100 --rate 500 --dp-len 100 --delay 1000 --endpoint ipc://127.0.0.1:5555\n"
-           "    Subscriber:\t%s zeromq --log --sub --sub_ids sub1 --count 100 --endpoint ipc://127.0.0.1:5555\n"
+           "  In-process:\t\t%s nng --sub --sub --sub_ids sub1 sub2 --pub --count 100 --rate 500 --dp-len 100 --delay 1000 --endpoint inproc://benchmark\n"
            "\n"
            "  --help                         Show this menu\n"
            "  -z, --conf <file>              Use config file for options (config has priority)\n"
@@ -79,7 +76,7 @@ void display_help(char* program) {
            "  --pub                          Run as publisher (inter-process communication only)\n"
            "  --sub                          Run as subscriber (inter-process communication only)\n"
            "  --sub_ids <id1> <id2> ...      Provide IDs for each subscriber if multiple subs are used\n"
-           , program, program, program, program, message_count, pub_time_interval, payload_length, pub_start_delay, endpoint);
+           , program, program, message_count, pub_time_interval, payload_length, pub_start_delay, endpoint);
     exit(EXIT_FAILURE);
 }
 
@@ -345,8 +342,6 @@ void subscriber(void *pipe, void *args) {
 // Main
 // -------------------------------
 
-extern messaging_ops_t ops_zeromq;
-extern messaging_ops_t ops_nanomsg;
 extern messaging_ops_t ops_nng;
 messaging_ops_t messaging_ops;
 
@@ -383,15 +378,7 @@ int main(int argc, char* argv[]) {
 
     signal(SIGUSR1, sigusr1_handler); 
 
-    if (strcmp(argv[1], "zeromq") == 0) {
-        printf("Using ZeroMQ, ");
-        messaging_ops = ops_zeromq;
-        library_name = "zeromq";
-    } else if (strcmp(argv[1], "nanomsg") == 0) {
-        printf("Using NanoMsg, ");
-        messaging_ops = ops_nanomsg;
-        library_name = "nanomsg";
-    } else if (strcmp(argv[1], "nng") == 0) {
+    if (strcmp(argv[1], "nng") == 0) {
         printf("Using NNG, ");
         messaging_ops = ops_nng;
         library_name = "nng";
