@@ -7,8 +7,12 @@
 #include <stdio.h>
 #include <nng/nng.h>
 // Bridge header from the nng-rtt-lite fork (../../nng/nng_wrapper.h).
-// When compiled with -DNNG_PUBSUB_RELIABLE it redirects pub/sub to
-// req/rep + RTT-lite adaptive mode; without it this is plain upstream NNG.
+// - plain build: upstream NNG pub/sub.
+// - -DNNG_PUBSUB_RELIABLE: pub/sub redirected to req/rep + RTT-lite
+//   adaptive mode (1 subscriber; N subs load-balance, not broadcast).
+// - -DNNG_PUBSUB_SURVEY: pub/sub redirected to surveyor/respondent,
+//   true 1-to-N broadcast with per-subscriber replies (no adaptive
+//   control; that machinery lives in req.c only).
 #include "nng_wrapper.h"
 
 /**
@@ -85,6 +89,20 @@ void* nng_create_pub(const char* endpoint, void* pipe) {
     int rv;
 
     nng_init(NULL);
+#ifdef NNG_PUBSUB_SURVEY
+    // Survey bridge config: expected replies per message and survey
+    // deadline. Must be set before nng_pub0_open (which applies them).
+    {
+        const char *q = getenv("NNG_SURVEY_QUORUM");
+        const char *t = getenv("NNG_SURVEY_TIME_MS");
+        if (q != NULL && atoi(q) > 0) {
+            nng_survey_quorum = atoi(q);
+        }
+        if (t != NULL && atoi(t) > 0) {
+            nng_survey_deadline_ms = (nng_duration) atoi(t);
+        }
+    }
+#endif
     if (nng_pub0_open(&pub) != 0) {
         fprintf(stderr, "Failed to create NNG publisher socket\n");
         return NULL;
@@ -123,9 +141,9 @@ void* nng_create_sub(const char* endpoint, const char* filter, void* pipe) {
         return NULL;
     }
 
-#ifndef NNG_PUBSUB_RELIABLE
+#if !defined(NNG_PUBSUB_RELIABLE) && !defined(NNG_PUBSUB_SURVEY)
     // Plain NNG pub/sub: subscribe to everything (empty filter).
-    // RTT-lite mode: sub socket is really a rep socket, no subscribe needed.
+    // Bridge modes: sub socket is really rep/respondent, no subscribe needed.
     if (nng_sub0_socket_subscribe(sub, filter, strlen(filter)) != 0) {
         fprintf(stderr, "Failed to set NNG subscriber filter\n");
         nng_socket_close(sub);

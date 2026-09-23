@@ -17,12 +17,22 @@ ifeq ($(RTT),1)
 CFLAGS += -DNNG_PUBSUB_RELIABLE
 endif
 
-.PHONY: all clean reliable
+# Survey bridge toggle: true 1-to-N broadcast where every subscriber
+# replies (needs NNG_SURVEY_QUORUM=sub-count at run time, see below).
+# Survey build: `make SURVEY=1` (or `make survey`). Wins over RTT if both set.
+ifeq ($(SURVEY),1)
+CFLAGS += -DNNG_PUBSUB_SURVEY
+endif
+
+.PHONY: all clean reliable survey
 
 all: $(EXEC)
 
 reliable: CFLAGS += -DNNG_PUBSUB_RELIABLE
 reliable: $(EXEC)
+
+survey: CFLAGS += -DNNG_PUBSUB_SURVEY
+survey: $(EXEC)
 
 $(EXEC): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
