@@ -13,6 +13,9 @@
 // - -DNNG_PUBSUB_SURVEY: pub/sub redirected to surveyor/respondent,
 //   true 1-to-N broadcast with per-subscriber replies (no adaptive
 //   control; that machinery lives in req.c only).
+// - -DNNG_PUBSUB_SACK: pub/sub redirected to sack/sackresp, true 1-to-N
+//   broadcast + RTT-lite with a window of 8 and one cumulative
+//   "C<next>[:mask]" ACK per ~8 surveys (see ../../nng/SURVEYACK_PROTOCOL.md).
 #include "nng_wrapper.h"
 
 /**
@@ -103,6 +106,17 @@ void* nng_create_pub(const char* endpoint, void* pipe) {
         }
     }
 #endif
+#ifdef NNG_PUBSUB_SACK
+    // SACK bridge config: survey deadline cap. Must be set before
+    // nng_pub0_open (which applies it). No quorum: every subscriber's
+    // holes are resent until cumulatively acked.
+    {
+        const char *t = getenv("NNG_SACK_TIME_MS");
+        if (t != NULL && atoi(t) > 0) {
+            nng_sack_deadline_ms = (nng_duration) atoi(t);
+        }
+    }
+#endif
     if (nng_pub0_open(&pub) != 0) {
         fprintf(stderr, "Failed to create NNG publisher socket\n");
         return NULL;
@@ -141,7 +155,8 @@ void* nng_create_sub(const char* endpoint, const char* filter, void* pipe) {
         return NULL;
     }
 
-#if !defined(NNG_PUBSUB_RELIABLE) && !defined(NNG_PUBSUB_SURVEY)
+#if !defined(NNG_PUBSUB_RELIABLE) && !defined(NNG_PUBSUB_SURVEY) && \
+    !defined(NNG_PUBSUB_SACK)
     // Plain NNG pub/sub: subscribe to everything (empty filter).
     // Bridge modes: sub socket is really rep/respondent, no subscribe needed.
     if (nng_sub0_socket_subscribe(sub, filter, strlen(filter)) != 0) {

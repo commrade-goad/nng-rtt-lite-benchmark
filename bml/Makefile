@@ -24,7 +24,14 @@ ifeq ($(SURVEY),1)
 CFLAGS += -DNNG_PUBSUB_SURVEY
 endif
 
-.PHONY: all clean reliable survey
+# Cumulative-ACK bridge toggle: sack/sackresp + RTT-lite, window of 8,
+# one "C<next>[:mask]" per ~8 surveys instead of one ACK per survey.
+# SACK build: `make SACK=1` (or `make sack`). Wins over both above.
+ifeq ($(SACK),1)
+CFLAGS += -DNNG_PUBSUB_SACK
+endif
+
+.PHONY: all clean reliable survey sack
 
 all: $(EXEC)
 
@@ -33,6 +40,9 @@ reliable: $(EXEC)
 
 survey: CFLAGS += -DNNG_PUBSUB_SURVEY
 survey: $(EXEC)
+
+sack: CFLAGS += -DNNG_PUBSUB_SACK
+sack: $(EXEC)
 
 $(EXEC): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
