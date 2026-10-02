@@ -221,6 +221,12 @@ void* nng_create_poller(void* socket, int is_publisher) {
 void nng_destroy(void* socket) {
     nng_socket* sock = (nng_socket*)socket;
     if (sock) {
+#if defined(NNG_PUBSUB_SACK)
+        // Wait for final in-flight surveys to drain before tearing down socket
+        if (nng_sack_seq_next > 1) {
+            nng_sack_sync(*sock, nng_sack_seq_next - 1, 2000);
+        }
+#endif
         nng_socket_close(*sock);
         free(sock);
     }

@@ -3,7 +3,7 @@ CC = gcc
 # Fork layout: this Makefile lives in <bench>/bml/, the fork in <bench>/../nng
 NNG_SRC = ../../nng
 NNG_BUILD = ../../nng/build
-CFLAGS = -Wall -Wextra -O2 -pthread -I$(NNG_SRC)/include -I$(NNG_SRC)
+CFLAGS = -Wall -Wextra -O3 -march=native -pthread -I$(NNG_SRC)/include -I$(NNG_SRC)
 LDFLAGS = -L$(NNG_BUILD) -Wl,-rpath,$(abspath $(NNG_BUILD)) -lnng -pthread -lm
 # NNG-only sources (ops_zeromq.c / ops_nanomsg.c intentionally excluded)
 SRC = pub-sub.c utils.c ops_nng.c
