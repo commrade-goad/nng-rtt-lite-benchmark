@@ -222,9 +222,18 @@ void nng_destroy(void* socket) {
     nng_socket* sock = (nng_socket*)socket;
     if (sock) {
 #if defined(NNG_PUBSUB_SACK)
-        // Wait for final in-flight surveys to drain before tearing down socket
-        if (nng_sack_seq_next > 1) {
-            nng_sack_sync(*sock, nng_sack_seq_next - 1, 2000);
+        if (nng_sack_is_pub(*sock)) {
+            // Publisher: wait for final in-flight surveys to drain
+            // before tearing down socket.
+            if (nng_sack_seq_next > 1) {
+                nng_sack_sync(*sock, nng_sack_seq_next - 1, 2000);
+            }
+            nng_sack_pub_forget(*sock);
+        } else {
+            // Subscriber: flush the final partial batch so the
+            // publisher's tail slots get acked instead of expiring.
+            // No-op when nothing was received (last == 0).
+            nng_sack_flush(*sock);
         }
 #endif
         nng_socket_close(*sock);
