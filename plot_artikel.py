@@ -186,13 +186,17 @@ def main():
         )
 
     # --- G1: loss d10 per payload, kedua lib (pengganti fig5) ---
+    # Count mengikuti run-multi-test.sh: COUNT_D10=1000,
+    # COUNT_D10_BIG=500 untuk dp>=16000. Jangan hardcode 1000.
     fig, ax = plt.subplots()
     pays = ["1000", "4000", "16000"]
+    counts = {"1000": 1000, "4000": 1000, "16000": 500}
     xs = ["1 KB", "4 KB", "16 KB"]
     w = 0.35
     for i, v in enumerate(["std", "survey"]):
         loss = [
-            (1000 - mean(M[(p, v, "lod10", "2sub")], "message_received")) / 10
+            (counts[p] - mean(M[(p, v, "lod10", "2sub")], "message_received"))
+            / counts[p] * 100
             for p in pays
         ]
         ax.bar([x + i * w for x in range(3)], loss, width=w, label=v)
@@ -269,24 +273,28 @@ def main():
     fig.savefig(os.path.join(a.out, "fig_wifi_hasil.png"), dpi=150)
 
     # --- G5: isolasi slow-peer (rerun netns) ---
+    # q1/q2 memakai env yang diabaikan SACK dan hasilnya identik,
+    # jadi di-pool menjadi satu bar "survey" (6 file per sub).
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
-    order = ["std", "q1-survey", "q2-survey"]
-    labels = ["std", "kuorum 1", "kuorum 2"]
-    s1thr = [mean(A[(k, "s1")], "throughput") for k in order]
-    s2recv = [mean(A[(k, "s2")], "message_received") for k in order]
-    x = range(3)
+    order = ["std", "survey"]
+    labels = ["std", "survey"]
+    s1thr = [mean(A[("std", "s1")], "throughput"),
+             mean(A[("q1-survey", "s1")] + A[("q2-survey", "s1")], "throughput")]
+    s2recv = [mean(A[("std", "s2")], "message_received"),
+              mean(A[("q1-survey", "s2")] + A[("q2-survey", "s2")], "message_received")]
+    x = range(2)
     ax1.bar(list(x), s1thr)
     ax1.set_yscale("log")
     ax1.set_xticks(list(x), labels)
     ax1.set_ylabel("Throughput s1, msg/s (log)")
-    ax1.set_xlabel("Kebijakan (s1 cepat, s2 lambat 50 ms)")
-    ax1.set_title("s1 Dragged Only Under Wait-for-All")
+    ax1.set_xlabel("Varian (s1 cepat, s2 lambat 50 ms)")
+    ax1.set_title("Fast Peer Throughput (Shared Window)")
     for i in x:
         ax1.text(i, s1thr[i] * 1.2, f"{s1thr[i]:.0f}", ha="center", fontsize=8)
     ax2.bar(list(x), s2recv)
     ax2.set_xticks(list(x), labels)
     ax2.set_ylabel("Messages Received s2 (of 1000)")
-    ax2.set_xlabel("Kebijakan (s1 cepat, s2 lambat 50 ms)")
+    ax2.set_xlabel("Varian (s1 cepat, s2 lambat 50 ms)")
     ax2.set_title("Slow Peer Completeness")
     fig.tight_layout()
     fig.savefig(os.path.join(a.out, "fig_asym_isolation.png"), dpi=150)

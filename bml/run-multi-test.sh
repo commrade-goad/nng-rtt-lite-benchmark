@@ -114,12 +114,16 @@ sudo tc qdisc del dev lo root
 fi
 
 # ---------------- D. TCP-lo, delay 50ms 10ms loss 2% ----------------
+# NOTE: restricted to dp=1000, n=2. Larger D configs (4000/16000,
+# 4/8 subs) exceed practical run time under heavy impairment and are
+# excluded from analysis; keep the script from generating data we throw
+# away (and from taking forever).
 if want D; then
 sudo tc qdisc del dev lo root 2>/dev/null
 sudo tc qdisc add dev lo root netem delay 50ms 10ms loss 2%
-for dp in 1000 4000 16000; do
+for dp in 1000; do
   cnt=$COUNT_D50; [ "$dp" -ge 16000 ] && cnt=$COUNT_D50_BIG
-  for n in 2 4 8; do
+  for n in 2; do
     for lib in std survey; do
       for r in 1 2 3; do
         run_tcp "$lib" "$n" "$dp" "$cnt" "${dp}-${lib}-lod50l2-${n}sub-r$r"
