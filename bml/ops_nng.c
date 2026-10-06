@@ -14,8 +14,8 @@
 //   true 1-to-N broadcast with per-subscriber replies (no adaptive
 //   control; that machinery lives in req.c only).
 // - -DNNG_PUBSUB_SACK: pub/sub redirected to sack/sackresp, true 1-to-N
-//   broadcast + RTT-lite with a window of 8 and one cumulative
-//   "C<next>[:mask]" ACK per ~8 surveys (see ../../nng/SURVEYACK_PROTOCOL.md).
+//   broadcast + RTT-lite with a window of 32 and one cumulative
+//   "C<next>[:mask]" ACK per ~32 surveys (see ../../nng/SURVEYACK_PROTOCOL.md).
 #include "nng_wrapper.h"
 
 /**
