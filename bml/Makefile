@@ -4,6 +4,11 @@ CC = gcc
 NNG_SRC = ../../nng
 NNG_BUILD = ../../nng/build
 CFLAGS = -Wall -Wextra -O3 -march=native -pthread -I$(NNG_SRC)/include -I$(NNG_SRC)
+# Single-knob scale S shared with the lib (sack_params.h): MUST equal the
+# -DSACK0_RING_MAX used when building libnng, else pub/sub silently
+# disagree on window and batch size. Usage: `make SACK=1 RING=32`.
+RING ?= 16
+CFLAGS += -DSACK0_RING_MAX=$(RING)
 LDFLAGS = -L$(NNG_BUILD) -Wl,-rpath,$(abspath $(NNG_BUILD)) -lnng -pthread -lm
 # NNG-only sources (ops_zeromq.c / ops_nanomsg.c intentionally excluded)
 SRC = pub-sub.c utils.c ops_nng.c
@@ -24,8 +29,8 @@ ifeq ($(SURVEY),1)
 CFLAGS += -DNNG_PUBSUB_SURVEY
 endif
 
-# Cumulative-ACK bridge toggle: sack/sackresp + RTT-lite, window of 8,
-# one "C<next>[:mask]" per ~8 surveys instead of one ACK per survey.
+# Cumulative-ACK bridge toggle: sack/sackresp + RTT-lite, window of RING,
+# one "C<next>[:mask]" per RING surveys instead of one ACK per survey.
 # SACK build: `make SACK=1` (or `make sack`). Wins over both above.
 ifeq ($(SACK),1)
 CFLAGS += -DNNG_PUBSUB_SACK
